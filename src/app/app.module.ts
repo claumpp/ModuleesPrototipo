@@ -7,13 +7,15 @@ import { AppRoutingModule } from './app.routing';
 import { WebmapComponent } from './webmap/webmap.component';
 import { ContainerComponent } from './container/container.component';
 import { HeaderComponent } from './components/header/header.component';
+import { DetailComponent } from './detail/detail.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     WebmapComponent,
     ContainerComponent,
-    HeaderComponent
+    HeaderComponent,
+    DetailComponent
   ],
   imports: [
     BrowserModule,

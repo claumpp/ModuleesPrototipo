@@ -5,7 +5,12 @@
 }
 
 .division {
-  border-width: 5px;
+  border-width: 3px;
   border-color: #888888;
   border-style: solid;
+}
+
+table {
+  font-size: 12px;
+  letter-spacing: -0.062em;
 }

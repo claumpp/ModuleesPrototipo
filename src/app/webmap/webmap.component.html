@@ -1,5 +1,24 @@
 <div class="row">
   <div class="col-md-4 division">
+    <table class="table">
+      <thead class="thead-dark">
+      <tr>
+        <th scope="col">Referencia Catastral</th>
+        <th scope="col">Dirección</th>
+        <th scope="col">Provincia</th>
+        <th scope="col">Municipio</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let mk of properties">
+        <td><a href="#" routerLink="/detail/{{ mk.rc}}">{{mk.rc}}</a></td>
+        <td><p>{{mk.address}} {{mk.locInt}}</p></td>
+        <td><p>{{mk.province}}</p></td>
+        <td><p>{{mk.town}}</p></td>
+      </tr>
+      </tbody>
+    </table>
+
 
   </div>
   <div #webMapViewNode class="col-md-8 division">

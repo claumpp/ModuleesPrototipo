@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Routes, RouterModule } from '@angular/router';
 import { WebmapComponent } from './webmap/webmap.component';
 import {ContainerComponent} from './container/container.component';
+import {DetailComponent} from "./detail/detail.component";
 
 export const routes: Routes = [
   { path: '', redirectTo: '/webmap', pathMatch: 'full' },
@@ -10,8 +11,16 @@ export const routes: Routes = [
     {
       path: 'webmap',
       component: WebmapComponent
+    },
+    {
+      path: 'detail/:rc',
+      data: {
+        title: 'Detail'
+      },
+      component: DetailComponent
     }
-    ] },
+   ]
+  },
 ];
 
 @NgModule({

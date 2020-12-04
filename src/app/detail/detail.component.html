@@ -1,0 +1,17 @@
+<div class="card">
+  <div class="card-header">DATOS DESCRIPTIVOS DEL INMUEBLE</div>
+  <div class="card-body">
+    <p class="card-text"> Referencia catastral: {{ property.rc}}</p>
+    <p class="card-text"> Localización: {{ property.completeAddress}}</p>
+    <p class="card-text"> Uso principal: {{ property.use}}</p>
+    <p class="card-text"> Superficie construida: {{ property.surfaceCons}}</p>
+    <p class="card-text"> Año construcción: {{ property.yearConstruction}}</p>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header">PARCELA CATASTRAL</div>
+  <div class="card-body">
+    <p class="card-text"> Participación del inmueble: {{ property.participation}} %</p>
+  </div>
+</div>
+
