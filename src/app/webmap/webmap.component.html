@@ -1,25 +1,49 @@
-<div class="row">
+<div class="row" >
   <div class="col-md-4 division">
-    <table class="table">
-      <thead class="thead-dark">
-      <tr>
-        <th scope="col">Referencia Catastral</th>
-        <th scope="col">Dirección</th>
-        <th scope="col">Provincia</th>
-        <th scope="col">Municipio</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr *ngFor="let mk of properties">
-        <td><a href="#" routerLink="/detail/{{ mk.rc}}">{{mk.rc}}</a></td>
-        <td><p>{{mk.address}} {{mk.locInt}}</p></td>
-        <td><p>{{mk.province}}</p></td>
-        <td><p>{{mk.town}}</p></td>
-      </tr>
-      </tbody>
-    </table>
-
-
+    <div *ngIf="!propIsSelected" class="information">
+      <table class="table">
+        <thead class="thead-dark">
+        <tr>
+          <th scope="col">Referencia Catastral</th>
+          <th scope="col">Dirección</th>
+          <th scope="col">Provincia</th>
+          <th scope="col">Municipio</th>
+        </tr>
+        </thead>
+        <tbody *ngIf="properties.length > 0 ">
+        <tr  *ngFor="let mk of properties">
+          <td><button class="btn btn-link" (click)="getDetailFromRC(mk)">{{mk.rc}}</button></td>
+          <td><p>{{mk.address}} {{mk.locInt}}</p></td>
+          <td><p>{{mk.province}}</p></td>
+          <td><p>{{mk.town}}</p></td>
+        </tr>
+        </tbody>
+        <tbody *ngIf="properties.length == 0">
+        <tr>
+          {{error}}
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="detail"  *ngIf="propIsSelected">
+      <button type="button" class="btn btn-info" (click)="propIsSelected = false;">VOLVER</button>
+      <div class="card">
+        <div class="card-header">DATOS DESCRIPTIVOS DEL INMUEBLE</div>
+        <div class="card-body">
+          <p class="card-text"> Referencia catastral: {{ propSelected.rc}}</p>
+          <p class="card-text"> Localización: {{ propSelected.completeAddress}}</p>
+          <p class="card-text"> Uso principal: {{ propSelected.use}}</p>
+          <p class="card-text"> Superficie construida: {{ propSelected.surfaceCons}}</p>
+          <p class="card-text"> Año construcción: {{ propSelected.yearConstruction}}</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">PARCELA CATASTRAL</div>
+        <div class="card-body">
+          <p class="card-text"> Participación del inmueble: {{ propSelected.participation}} %</p>
+        </div>
+      </div>
+    </div>
   </div>
   <div #webMapViewNode class="col-md-8 division">
   </div>

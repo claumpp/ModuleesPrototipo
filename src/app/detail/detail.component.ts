@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import {CatastroService} from "../services/catastro.service";
+import {CadastreService} from "../services/cadastre.service";
 import {ActivatedRoute} from "@angular/router";
 import {Property} from "../model/property";
 
@@ -11,7 +11,7 @@ import {Property} from "../model/property";
 export class DetailComponent implements OnInit {
 
   property: Property;
-  constructor( public catastroService: CatastroService, private route: ActivatedRoute ) { }
+  constructor(public catastroService: CadastreService, private route: ActivatedRoute ) { }
 
   ngOnInit(): void {
     const rc = this.route.snapshot.paramMap.get('rc');

@@ -1,6 +1,6 @@
 import {Component, ElementRef, EventEmitter, OnInit, Output, ViewChild, OnDestroy} from '@angular/core';
 import { loadModules } from 'esri-loader';
-import {CatastroService} from "../services/catastro.service";
+import {CadastreService} from "../services/cadastre.service";
 import {Property} from "../model/property";
 
 @Component({
@@ -11,13 +11,17 @@ import {Property} from "../model/property";
 export class WebmapComponent implements OnInit, OnDestroy {
 
   properties: Property[];
+  error: string;
+  propSelected: Property;
+  propIsSelected: boolean;
 
   @Output() mapLoadedEvent = new EventEmitter<boolean>();
 
   @ViewChild('webMapViewNode', { static: true }) private mapViewEl: ElementRef;
   view: any;
 
-  constructor( public catastroService: CatastroService) { }
+  constructor( public catastroService: CadastreService) {
+  }
 
   async initializeMap() {
     try {
@@ -51,36 +55,69 @@ export class WebmapComponent implements OnInit, OnDestroy {
         basemap: 'topo-vector'
       };
 
-      const map = new Map(mapProperties);
+      const newSpatialReference = new SpatialReference({
+        wkid: 25830
+      });
+      const gsvc = new GeometryService('http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer');
 
+      //map properties
+      const map = new Map(mapProperties);
       const mapViewProperties = {
         container: this.mapViewEl.nativeElement,
         center: [-0.3601076, 39.4977788],
-        zoom: 10,
+        zoom: 13,
         map: map
       };
-
       this.view = new MapView(mapViewProperties);
 
       const searchWidget = new Search({
-
         view: this.view
       });
       await this.view.when( () => {
-        this.properties = [];
 
+        // case navigation into map
+        this.view.on('click', (evt) => {
+          this.properties = [];
+          searchWidget.clear();
+          this.view.popup.clear();
+          if (searchWidget.activeSource) {
+            const geocoder = searchWidget.activeSource.locator;
+            const params = {
+              location: evt.mapPoint
+            };
+            geocoder.locationToAddress(params)
+              .then((response) => {
+                const address = response.address;
+                const point = evt.mapPoint;
+                this.showPopup(address, point, this.view );
+
+                const params = new ProjectParameters({
+                  geometries: [point],
+                  outSpatialReference: newSpatialReference
+                });
+
+                let newGeometry;
+                gsvc.project(params).then( (outGem) => {
+                  newGeometry = outGem[0];
+                  this.getInfoFromCadastre(newGeometry.x, newGeometry.y);
+                });
+
+              }, (err) =>  {
+                this.showPopup("No address found.", evt.mapPoint, this.view);
+              });
+          }
+        });
+
+        this.properties = [];
         this.view.ui.add( searchWidget, {
           position: 'top-right',
           index: 0
         } );
 
+        // case search in widget
         searchWidget.on('select-result', (event) => {
-          const newSpatialReference = new SpatialReference({
-            wkid: 25830
-          });
-
+          this.properties = [];
           const point = event.result.feature.geometry;
-          const gsvc = new GeometryService('http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer');
           const params = new ProjectParameters({
             geometries: [point],
             outSpatialReference: newSpatialReference
@@ -88,26 +125,7 @@ export class WebmapComponent implements OnInit, OnDestroy {
           let newGeometry;
           gsvc.project(params).then( (outGem) => {
             newGeometry = outGem[0];
-            this.catastroService.getRCByCoordinates(newGeometry.x, newGeometry.y).subscribe( (data) => {
-              const parser = new DOMParser();
-              let dataFile = parser.parseFromString(data, 'text/xml');
-              const rc1 = dataFile.getElementsByTagName('pc1')[0].textContent;
-              const rc2 = dataFile.getElementsByTagName('pc2')[0].textContent;
-              const rcGeneral = rc1.concat(rc2);
-               this.catastroService.getBuildingDetailsByRC(rcGeneral).subscribe((prop) => {
-                const parser2 = new DOMParser();
-                let dataXML = parser2.parseFromString(prop, 'text/xml');
-                const properties = dataXML.getElementsByTagName('rcdnp');
-                let rcToSearch = rcGeneral;
-                for ( let i = 0; i < properties.length ; i++){
-                  let detail = properties[i];
-                  let property = this.getInfoPropGeneral(detail, rcGeneral);
-                  console.log('Las propiedades!!!! ', this.properties);
-                  this.properties.push(property);
-                }
-              });
-
-            });
+            this.getInfoFromCadastre(newGeometry.x, newGeometry.y);
           });
         });
       });
@@ -118,6 +136,9 @@ export class WebmapComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.propSelected = new Property('','','','','','','','','','','','','');
+    this.properties = [];
+    this.propIsSelected = false;
     this.initializeMap();
   }
 
@@ -127,7 +148,41 @@ export class WebmapComponent implements OnInit, OnDestroy {
     }
   }
 
-  getInfoPropGeneral (prop: any, rcGeneral: string) {
+  getInfoFromCadastre( x: any, y: any ) {
+    this.catastroService.getRCByCoordinates(x, y).subscribe( (data) => {
+      const parser = new DOMParser();
+      let dataFile = parser.parseFromString(data, 'text/xml');
+      const err = dataFile.getElementsByTagName('err')[0];
+      if (err !== undefined) {
+        this.error = err.getElementsByTagName('des')[0].textContent;
+      } else {
+        const rc1 = dataFile.getElementsByTagName('pc1')[0].textContent;
+        const rc2 = dataFile.getElementsByTagName('pc2')[0].textContent;
+        const rcGeneral = rc1.concat(rc2);
+        this.catastroService.getBuildingDetailsByRC(rcGeneral).subscribe((prop) => {
+          const parser2 = new DOMParser();
+          let dataXML = parser2.parseFromString(prop, 'text/xml');
+
+          // case: when request is only one property
+          const propertyOnly = dataXML.getElementsByTagName('bico')[0];
+          if ( propertyOnly !== undefined ){
+            let property = this.getInfoPropGeneral(propertyOnly);
+            this.properties.push(property);
+          } else {
+            // case: when request are many properties
+            const properties = dataXML.getElementsByTagName('rcdnp');
+            for ( let i = 0; i < properties.length ; i++){
+              let detail = properties[i];
+              let property = this.getInfoPropGeneral(detail);
+              this.properties.push(property);
+            }
+          }
+        });
+      }
+    });
+  }
+
+  getInfoPropGeneral (prop: any) {
 
     const rc1 = prop.getElementsByTagName('pc1')[0].textContent;
     const rc2 = prop.getElementsByTagName('pc2')[0].textContent;
@@ -153,5 +208,36 @@ export class WebmapComponent implements OnInit, OnDestroy {
     let logInt = '';
     logInt = logInt.concat(block, ' ' , stair, ' ' ,plant , ' ' ,door);
     return new Property(rc, address, logInt,'', postalCode, prov, town, '', '', '', '', '','');
+  }
+
+
+
+  showPopup(address, pt, view) {
+    view.popup.open({
+      title:  + Math.round(pt.longitude * 100000)/100000 + ", " + Math.round(pt.latitude * 100000)/100000,
+      content: address,
+      location: pt
+    });
+  }
+
+  getDetailFromRC(prop: Property){
+    const rc = prop.rc;
+    this.propIsSelected = true;
+    this.catastroService.getBuildingDetailsByRC(rc).subscribe((prop) => {
+      const parser2 = new DOMParser();
+      let dataXML = parser2.parseFromString(prop, 'text/xml');
+      const properties = dataXML.getElementsByTagName('bico')[0];
+      this.propSelected  = this.convertToProperty(properties, rc);
+    })
+  }
+
+  convertToProperty (info: any, rc: string) {
+    const address = info.getElementsByTagName('ldt')[0].textContent;
+    const use = info.getElementsByTagName('luso')[0].textContent;
+    const surfaceCons = info.getElementsByTagName('sfc')[0].textContent;
+    const year = info.getElementsByTagName('ant')[0].textContent;
+    const surfaceGraph = info.getElementsByTagName('sfc')[0].textContent;
+    const participation = info.getElementsByTagName('cpt').length > 0 ? info.getElementsByTagName('cpt')[0].textContent: '';
+    return new Property(rc, '', '', surfaceCons, '', '', '', year, '', address, use, surfaceGraph, participation);
   }
 }

@@ -6,7 +6,7 @@ import {throwError} from "rxjs";
 @Injectable({
   providedIn: 'root'
 })
-export class CatastroService {
+export class CadastreService {
 
   CATASTRO_SPAIN_BY_COORDINATES = 'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCoordenadas.asmx/Consulta_RCCOOR';
   CATASTRO_SPAIN_BY_RC = 'http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_DNPRC';

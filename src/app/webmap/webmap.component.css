@@ -10,7 +10,12 @@
   border-style: solid;
 }
 
+.information {
+  height: 100vh;
+  overflow: auto;
+}
 table {
   font-size: 12px;
   letter-spacing: -0.062em;
 }
+
