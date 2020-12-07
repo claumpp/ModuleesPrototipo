@@ -65,7 +65,7 @@ export class WebmapComponent implements OnInit, OnDestroy {
       const mapViewProperties = {
         container: this.mapViewEl.nativeElement,
         center: [-0.3601076, 39.4977788],
-        zoom: 13,
+        zoom: 10,
         map: map
       };
       this.view = new MapView(mapViewProperties);
