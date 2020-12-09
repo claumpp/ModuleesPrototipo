@@ -15,6 +15,8 @@ export class WebmapComponent implements OnInit, OnDestroy {
   propSelected: Property;
   propIsSelected: boolean;
 
+  WMS_CADASTRE = 'http://ovc.catastro.meh.es/cartografia/INSPIRE/spadgcwms.aspx?';
+
   @Output() mapLoadedEvent = new EventEmitter<boolean>();
 
   @ViewChild('webMapViewNode', { static: true }) private mapViewEl: ElementRef;
@@ -27,29 +29,32 @@ export class WebmapComponent implements OnInit, OnDestroy {
     try {
       const [
         Map,
-        FeatureLayer,
         MapView,
-        LayerList ,
         Search,
-        Locator,
         SpatialReference,
-        projection,
-        Geometry,
         GeometryService,
-        ProjectParameters
+        ProjectParameters,
+        WMSLayer,
+        BasemapGallery,
+        LayerList,
+        Expand
       ] = await loadModules([
         'esri/Map',
-        'esri/layers/FeatureLayer',
         'esri/views/MapView',
-        'esri/widgets/LayerList',
         'esri/widgets/Search',
-        'esri/tasks/Locator',
         'esri/geometry/SpatialReference',
-        'esri/geometry/projection',
-        'esri/geometry/Geometry',
         'esri/tasks/GeometryService',
-        'esri/tasks/support/ProjectParameters']);
+        'esri/tasks/support/ProjectParameters',
+        'esri/layers/WMSLayer',
+        'esri/widgets/BasemapGallery',
+        'esri/widgets/LayerList',
+        'esri/widgets/Expand']);
 
+
+      const cartography = this.WMS_CADASTRE ;
+      const layer = new WMSLayer({
+        url: cartography
+      });
 
       const mapProperties = {
         basemap: 'topo-vector'
@@ -62,18 +67,47 @@ export class WebmapComponent implements OnInit, OnDestroy {
 
       //map properties
       const map = new Map(mapProperties);
+      map.add(layer);
       const mapViewProperties = {
         container: this.mapViewEl.nativeElement,
-        center: [-0.3601076, 39.4977788],
-        zoom: 10,
+        center: [-0.3601076, 39.723488],
+        zoom: 10.2,
         map: map
       };
       this.view = new MapView(mapViewProperties);
 
+      // Search widget
       const searchWidget = new Search({
         view: this.view
       });
+
       await this.view.when( () => {
+
+        //layerlist section
+        const layerList = new LayerList({
+          view: this.view,
+          listItemCreatedFunction: (evt) => {
+            let item = evt.item;
+            if (item.title == 'Spanish General Directorate for Cadastre - INSPIRE View Services - WMS') {
+              item.title = 'Datos catastrales';
+            }
+          }
+          });
+        this.view.ui.add(layerList, 'top-right');
+
+        // basemap widget
+        const basemapGallery = new BasemapGallery({
+          view: this.view,
+          container: document.createElement('div'),
+        });
+        const layerListExpand = new Expand({
+          expandIconClass: 'esri-icon-layer-list',
+          view: this.view,
+          content: basemapGallery
+        });
+        this.view.ui.add(layerListExpand, {
+          position: 'top-left'
+        });
 
         // case navigation into map
         this.view.on('click', (evt) => {
@@ -103,7 +137,7 @@ export class WebmapComponent implements OnInit, OnDestroy {
                 });
 
               }, (err) =>  {
-                this.showPopup("No address found.", evt.mapPoint, this.view);
+                this.showPopup('No address found.', evt.mapPoint, this.view);
               });
           }
         });
